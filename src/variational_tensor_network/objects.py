@@ -31,10 +31,11 @@ DEFAULT_config = Config()
 
 @dataclass
 class Environment:
+    
     C_ur: Tensor; C_ul: Tensor; C_dl: Tensor; C_dr: Tensor; T_r: Tensor; T_u: Tensor; T_l: Tensor; T_d: Tensor
 
     config: InitVar[Config | None] = None
-
+    
     def __post_init__(self, config: Config | None) -> None:
         corners = ("C_ur", "C_ul", "C_dl", "C_dr")
         edges = ("T_r", "T_u", "T_l", "T_d")
