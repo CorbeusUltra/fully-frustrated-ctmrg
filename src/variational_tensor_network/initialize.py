@@ -1,7 +1,8 @@
 """Initialize the bulk state and its environment."""
 
 import torch
-from torch import Tensor, einsum, norm
+from torch import Tensor, einsum
+from torch.linalg import norm
 
 from .objects import Config, DEFAULT_config, Environment
 
@@ -12,8 +13,6 @@ DEFAULT_delta = torch.ones(DEFAULT_config.D2)
 def initial_ket(config: Config = DEFAULT_config) -> Tensor:
     D = config.D
     d = config.d
-    # a = torch.zeros(D,D,D,D,d)
-    # a[...,1] = 1
     a = torch.rand(D,D,D,D,d)
     return a/norm(a)
 

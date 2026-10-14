@@ -17,7 +17,7 @@ if root is None:
 
 outputs_dir = root / "outputs"
 
-def run_ctmrg(env: Environment = DEFAULT_env, A: Tensor = DEFAULT_A, config: Config = DEFAULT_config) -> Environment:
+def run_ctmrg(env: Environment = DEFAULT_env, A: Tensor = DEFAULT_A, config: Config = DEFAULT_config) -> tuple[Environment, list[float], list[float]]:
     conv_atol = 1e-10
     conv_rtol = 1e-10
     max_iter = 100
@@ -45,19 +45,23 @@ def run_ctmrg(env: Environment = DEFAULT_env, A: Tensor = DEFAULT_A, config: Con
         # if error <= threshold:
         #     return env
 
-    plt.semilogy(range(2, len(errors) + 2), errors, "o-", color="blue", label=r"$|\xi_\text{new} - \xi_\text{old}|$")
-    plt.semilogy(range(2, len(thresholds) + 2), thresholds, "-", color="red", label="threshold")
-    plt.legend()
-    plt.xlabel("number of cycle")
-    plt.ylabel("Convergence error")
-    plt.tight_layout()
-    plt.grid()
-    plt.savefig(outputs_dir / "convergence.pdf")
-    # plt.show()
-
+    return env, errors, thresholds
     # raise RuntimeError("Convergence was not reached within max_iter cycles.")
 
 
+def plot_convergence(errors: list[float], thresholds: list[float]) -> None:
+    cycles = range(2, len(errors) + 2)
+    fig, ax = plt.subplots()
+    ax.semilogy(cycles, errors, "o-",  color="blue", label=r"$|\xi_\text{new} - \xi_\text{old}|$")
+    ax.semilogy(cycles, thresholds, "-", color="red", label="threshold")
+    ax.set(xlabel="number of cycle", ylabel="convergence error")
+    ax.legend()
+    ax.grid()
+    fig.tight_layout()
+    fig.savefig(outputs_dir / "convergence.pdf")
+    plt.close(fig)
+
 
 if __name__ == "__main__":
-    run_ctmrg()
+    env, errors, thresholds = run_ctmrg()
+    plot_convergence(errors, thresholds)
