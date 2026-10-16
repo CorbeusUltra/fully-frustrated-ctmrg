@@ -17,7 +17,7 @@ if root is None:
 
 outputs_dir = root / "outputs"
 
-def run_ctmrg(env: Environment = DEFAULT_env, A: Tensor = DEFAULT_A, config: Config = DEFAULT_config) -> tuple[Environment, list[float], list[float]]:
+def run_ctmrg(env: Environment = DEFAULT_env, A: Tensor = DEFAULT_A, config: Config = DEFAULT_config) -> Environment:
     conv_atol = 1e-10
     conv_rtol = 1e-10
     max_iter = 100
@@ -38,15 +38,34 @@ def run_ctmrg(env: Environment = DEFAULT_env, A: Tensor = DEFAULT_A, config: Con
         threshold = conv_atol + conv_rtol * scale
         thresholds.append(threshold)
 
-        print("\n\n")
-        print(f"error    = {error:.3e}")
-        print(f"conv_tol = {threshold:.3e}")
+        if error <= threshold:
+            return env
+    
+    raise RuntimeError("Convergence was not reached within max_iter cycles.")
 
-        # if error <= threshold:
-        #     return env
+
+def run_ctmrg_convergence_info(env: Environment = DEFAULT_env, A: Tensor = DEFAULT_A, config: Config = DEFAULT_config) -> tuple[Environment, list[float], list[float]]:
+    conv_atol = 1e-10
+    conv_rtol = 1e-10
+    max_iter = 100
+
+    env, xi_new = all_moves(env, A, config)
+
+    errors = []
+    thresholds = []
+
+    for _ in range(max_iter - 1):
+        xi_old = xi_new
+        env, xi_new = all_moves(env, A, config)
+        error = abs(xi_new - xi_old).item()
+        errors.append(error)
+
+        scale = max(abs(xi_old).item(), abs(xi_new).item())
+
+        threshold = conv_atol + conv_rtol * scale
+        thresholds.append(threshold)
 
     return env, errors, thresholds
-    # raise RuntimeError("Convergence was not reached within max_iter cycles.")
 
 
 def plot_convergence(errors: list[float], thresholds: list[float]) -> None:
@@ -59,9 +78,10 @@ def plot_convergence(errors: list[float], thresholds: list[float]) -> None:
     ax.grid()
     fig.tight_layout()
     fig.savefig(outputs_dir / "convergence.pdf")
+    plt.show()
     plt.close(fig)
 
 
 if __name__ == "__main__":
-    env, errors, thresholds = run_ctmrg()
+    env, errors, thresholds = run_ctmrg_convergence_info()
     plot_convergence(errors, thresholds)
