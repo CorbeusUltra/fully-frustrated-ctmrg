@@ -4,29 +4,28 @@ import torch
 from torch import Tensor, einsum
 from torch.linalg import norm
 
-from .objects import Config, DEFAULT_config, Environment
+from .objects import Config, Environment
 
 torch.set_default_dtype(torch.float64)
 
-DEFAULT_delta = torch.ones(DEFAULT_config.D2)
-
-def initial_ket(config: Config = DEFAULT_config) -> Tensor:
+def initial_a(config: Config) -> Tensor:
     D = config.D
     d = config.d
     a = torch.rand(D,D,D,D,d)
-    return a/norm(a)
+    return a / norm(a)
 
-DEFAULT_a = initial_ket()
-
-def initial_braket(a: Tensor = DEFAULT_a, config: Config = DEFAULT_config) -> Tensor:
+def initial_A(a: Tensor, config: Config) -> Tensor:
     D2 = config.D2
     A = einsum("ijkls,IJKLs->iIjJkKlL", a, a)
-    A = A.reshape((D2,)*4)
+    A = A.reshape(D2,D2,D2,D2)
     return A
 
-DEFAULT_A = initial_braket()
+def initial_sites(config: Config, sites_coords: tuple[(int,int)]):
+    a_sites = {r: initial_a(config) for r in sites_coords}
+    A_sites = {r: initial_A(a, config) for r, a in a_sites.items()}
+    return a_sites, A_sites
 
-def initial_env(delta: Tensor = DEFAULT_delta, A: Tensor = DEFAULT_A, config: Config = DEFAULT_config) -> Environment:
+def initial_env(delta: Tensor, A: Tensor, config: Config) -> Environment:
     C0 = einsum("ijkl,k,l->ij", A, delta, delta)
     T0 = einsum("k,ijkl->lij", delta, A)
 
@@ -50,12 +49,26 @@ def initial_env(delta: Tensor = DEFAULT_delta, A: Tensor = DEFAULT_A, config: Co
 
     return env
 
-DEFAULT_env = initial_env()
-
+def initial_env_sites(A_sites,sites_coords: tuple[tuple[int, int], ...], delta, config):
+    env_sites = dict()
+    for r in sites_coords:
+        env_sites[r] = initial_env(delta,A_sites[r],config)
+    return env_sites
+    
 
 def main():
-    print(f"C_ul.shape : {DEFAULT_env.C_ul.shape}")
-    print(f"T_l.shape : {DEFAULT_env.T_l.shape}")
+    from .unitcell import sites_coords
+    config = Config()
+    a_sites, A_sites = initial_sites(config,sites_coords)
+
+    for r in sites_coords:
+        print(r, a_sites[r].shape, A_sites[r].shape)
+
+    delta = torch.ones(config.D2)
+
+    env_sites = initial_env_sites(A_sites,sites_coords, delta, config)
+
+    print(env_sites)
 
 
 if __name__ == "__main__":
