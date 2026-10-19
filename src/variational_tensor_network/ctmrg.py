@@ -1,4 +1,4 @@
-"""Full CTMRG algorithm"""
+"""Full CTMRG algorithm."""
 
 # import torch
 from pathlib import Path
@@ -6,9 +6,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from torch import Tensor
 
-from .initialize import DEFAULT_A, DEFAULT_env
+from .initialize import initial_A, initial_a, initial_env, uniform_boundary
 from .moves import all_moves
-from .objects import Config, DEFAULT_config, Environment
+from .objects import Config, Environment
 
 root = next((p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()), None)
 
@@ -17,7 +17,7 @@ if root is None:
 
 outputs_dir = root / "outputs"
 
-def run_ctmrg(env: Environment = DEFAULT_env, A: Tensor = DEFAULT_A, config: Config = DEFAULT_config) -> Environment:
+def run_ctmrg(env: Environment, A: Tensor, config: Config) -> Environment:
     conv_atol = 1e-10
     conv_rtol = 1e-10
     max_iter = 100
@@ -44,7 +44,7 @@ def run_ctmrg(env: Environment = DEFAULT_env, A: Tensor = DEFAULT_A, config: Con
     raise RuntimeError("Convergence was not reached within max_iter cycles.")
 
 
-def run_ctmrg_convergence_info(env: Environment = DEFAULT_env, A: Tensor = DEFAULT_A, config: Config = DEFAULT_config) -> tuple[Environment, list[float], list[float]]:
+def run_ctmrg_convergence_info(env: Environment, A: Tensor, config: Config) -> tuple[Environment, list[float], list[float]]:
     conv_atol = 1e-10
     conv_rtol = 1e-10
     max_iter = 100
@@ -83,5 +83,10 @@ def plot_convergence(errors: list[float], thresholds: list[float]) -> None:
 
 
 if __name__ == "__main__":
-    env, errors, thresholds = run_ctmrg_convergence_info()
+    config = Config()
+    a = initial_a(config)
+    A = initial_A(a, config)
+    delta = uniform_boundary(config)
+    env = initial_env(delta, A, config)
+    env, errors, thresholds = run_ctmrg_convergence_info(env, A, config)
     plot_convergence(errors, thresholds)

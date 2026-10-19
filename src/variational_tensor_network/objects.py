@@ -1,4 +1,4 @@
-"""Define the objects exptected to be used later in make_move.py file"""
+"""Define the objects exptected to be used in moves.py file."""
 
 from collections.abc import Iterator
 from dataclasses import InitVar, dataclass
@@ -26,8 +26,6 @@ class Config:
     @property
     def D2(self) -> int:
         return self.D**2
-
-DEFAULT_config = Config()
 
 @dataclass
 class Environment:
