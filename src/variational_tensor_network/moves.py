@@ -1,24 +1,34 @@
 """Make one CTMRG move, here on the left of the environments."""
 
+from collections.abc import Callable, Mapping
+
 import torch
 from torch import Tensor, einsum
 from torch.linalg import norm
 
 from .objects import Config, Environment
-from .unitcell import unitcell_coord
+from .unitcell import rotated_unitcell_coord
 
 type Site = tuple[int, int]
 type TensorSites = dict[Site, Tensor]
+type EnvSites = dict[Site, Environment]
+type UnitCellCoord = Callable[[int, int], Site]
 
 
 
-def get_halves(site: Site, A_sites: TensorSites, env_sites: dict[Site, Environment]) -> tuple[Tensor, Tensor]:
-    # The reference site is the upper-left bulk tensor of the 2x2 patch.
+def make_accessor[Object](objects_sites: Mapping[Site, Object], site: Site, unitcell_coord: UnitCellCoord) -> Callable[[int, int], Object]:
     x, y = site
-    def A_at(dx: int, dy: int) -> Tensor:
-        return A_sites[unitcell_coord(x + dx, y + dy)]
-    def env_at(dx: int, dy: int) -> Environment:
-        return env_sites[unitcell_coord(x + dx, y + dy)]
+
+    def at(dx: int, dy: int) -> Object:
+        return objects_sites[unitcell_coord(x + dx, y + dy)]
+
+    return at
+
+
+def get_halves(site: Site, A_sites: TensorSites, env_sites: EnvSites, unitcell_coord: UnitCellCoord) -> tuple[Tensor, Tensor]:
+    # The reference site is the upper-left bulk tensor of the 2x2 patch.
+    A_at = make_accessor(A_sites, site, unitcell_coord)
+    env_at = make_accessor(env_sites, site, unitcell_coord)
     Q_ul = einsum("IA,AJB,iaI,bJaj->ijBb", env_at(-1,-1).C_ul, env_at(0,-1).T_u, env_at(-1,0).T_l, A_at(0,0))
     Q_ur = einsum("BKC,CL,cKbk,Lcl->Bbkl", env_at(+1,-1).T_u, env_at(+2,-1).C_ur, A_at(+1,0), env_at(+2,0).T_r)
     Q_dl = einsum("AI,BJA,Iai,bjaJ->ijBb", env_at(-1,+2).C_dl, env_at(0,+2).T_d, env_at(-1,+1).T_l, A_at(0,+1))
@@ -50,9 +60,116 @@ def get_projectors(R: Tensor, Rbar: Tensor, config: Config) -> tuple[Tensor, Ten
     return P, Pbar
 
 
+def absorb_left(site: Site, A_sites: TensorSites, env_sites: EnvSites, P_sites: TensorSites, Pbar_sites: TensorSites, unitcell_coord: UnitCellCoord) -> tuple[Tensor, Tensor, Tensor]:
+    A_at = make_accessor(A_sites, site, unitcell_coord)
+    env_at = make_accessor(env_sites, site, unitcell_coord)
+    P_at = make_accessor(P_sites, site, unitcell_coord)
+    Pbar_at = make_accessor(Pbar_sites, site, unitcell_coord)
+    C_ul_new = einsum("ijk,il,ljm->km",Pbar_at(0,-1),env_at(-1,-1).C_ul,env_at(0,-1).T_u)
+    T_l_new = einsum("ijkl,nkm,mjo,nlp->pio", A_at(0,0), env_at(-1,0).T_l, P_at(0,-1), Pbar_at(0,0))
+    C_dl_new = einsum("ijk,li,mjl->mk", P_at(0,0), env_at(-1,+1).C_dl, env_at(0,+1).T_d)
+    C_ul_new /= norm(C_ul_new)
+    T_l_new /= norm(T_l_new)
+    C_dl_new /= norm(C_dl_new)
+    return C_ul_new, T_l_new, C_dl_new
+
+
+def left_move_sites(A_sites: TensorSites, env_sites: EnvSites, unitcell_coord: UnitCellCoord, config: Config) -> EnvSites:
+    """Perform a left move, updating env_sites in place."""
+    P_sites: TensorSites = {}
+    Pbar_sites: TensorSites = {}
+    for site in A_sites:
+        R,Rbar = get_halves(site, A_sites,env_sites, unitcell_coord)
+        P,Pbar = get_projectors (R,Rbar,config)
+        P_sites[site] = P
+        Pbar_sites[site] = Pbar
+    C_ul_updates: TensorSites = {}
+    T_l_updates: TensorSites = {}
+    C_dl_updates: TensorSites = {}
+    for site in A_sites:
+        x, y = site
+        C_ul_new, T_l_new, C_dl_new = absorb_left(site, A_sites, env_sites, P_sites, Pbar_sites, unitcell_coord)
+        C_ul_updates[unitcell_coord(x, y - 1)] = C_ul_new
+        T_l_updates[unitcell_coord(x, y)] = T_l_new
+        C_dl_updates[unitcell_coord(x, y + 1)] = C_dl_new
+    for site in A_sites:
+        env_sites[site].C_ul = C_ul_updates[site]
+        env_sites[site].T_l = T_l_updates[site]
+        env_sites[site].C_dl = C_dl_updates[site]
+    return env_sites
+
+
+def rotated_sites(A_sites: TensorSites, env_sites: EnvSites, unitcell_coord: UnitCellCoord) -> tuple[TensorSites, EnvSites, Callable[[int, int], Site]]:
+    A_sites_rotated: TensorSites = {}
+    env_sites_rotated: EnvSites = {}
+
+    for (x, y), A in A_sites.items():
+        new_site = (y, -x)
+        A_sites_rotated[new_site] = A.permute(3, 0, 1, 2)
+
+        C_ur, C_ul, C_dl, C_dr, T_r, T_u, T_l, T_d = env_sites[(x, y)]
+        env_sites_rotated[new_site] = Environment(C_dr, C_ur, C_ul, C_dl, T_d, T_r, T_u, T_l)
+
+    unitcell_coord_rotated = rotated_unitcell_coord(unitcell_coord)
+    return A_sites_rotated, env_sites_rotated, unitcell_coord_rotated
+
+
+def all_moves_sites(A_sites: TensorSites, env_sites: EnvSites, unitcell_coord: UnitCellCoord, config: Config) -> EnvSites:
+    for _ in range(4):
+        env_sites_new = left_move_sites(A_sites, env_sites, unitcell_coord, config)
+        A_sites, env_sites, unitcell_coord = rotated_sites(A_sites, env_sites_new, unitcell_coord)
+    return env_sites
 
 
 
+
+
+
+def check_tiling(sites_coord: tuple[Site, ...], unitcell_coord: UnitCellCoord, config: Config, steps: int = 5) -> None:
+    from . import initialize
+
+    torch.manual_seed(0)
+    a = initialize.initial_a(config)
+    A = initialize.initial_A(a, config)
+    delta = initialize.uniform_boundary(config)
+
+    A_sites = {site: A for site in sites_coord}
+    env_sites = initialize.initial_env_sites(A_sites, delta, config)
+    env_reference = initialize.initial_env(delta, A, config)
+
+    for _ in range(steps):
+        env_reference, _ = all_moves(env_reference, A, config)
+        env_sites = all_moves_sites(A_sites, env_sites, unitcell_coord, config)
+
+        for env in env_sites.values():
+            for actual, expected in zip(env, env_reference):
+                torch.testing.assert_close(actual, expected, atol=1e-8, rtol=1e-8)
+
+    print(f"  OK | uniform reference: {steps} matching left moves")
+
+
+def main() -> None:
+    from time import perf_counter
+
+    from .unitcell import TILINGS
+
+    start = perf_counter()
+    config = Config()
+
+    for name, (sites_coord, unitcell_coord) in TILINGS.items():
+        print(f"\n[{name}] sites={len(sites_coord)} | D={config.D} | chi={config.chi}", flush=True)
+        check_tiling(sites_coord, unitcell_coord, config)
+
+    print(f"\nAll {len(TILINGS)} cases passed in {perf_counter() - start:.2f} s.")
+
+
+
+
+
+
+
+
+# Legacy code from the single site CTMRG
 
 def left_move(env: Environment, A: Tensor, config: Config) -> tuple[Environment, Tensor]:
     C_ur, C_ul, C_dl, C_dr, T_r, T_u, T_l, T_d = env
@@ -103,19 +220,9 @@ def all_moves(env: Environment, A: Tensor, config: Config) -> tuple[Environment,
     return env, xi
 
 
-if __name__ == "__main__":
-    from . import initialize
-    from .unitcell import sites_coords
 
-    config = Config()
-    _, A_sites = initialize.initial_sites(config, sites_coords)
-    delta = initialize.uniform_boundary(config)
-    env_sites = initialize.initial_env_sites(A_sites, delta, config)
-    for site in sites_coords:
-        R, Rbar = get_halves(site, A_sites, env_sites)
-        P, Pbar = get_projectors(R, Rbar, config)
-        assert torch.isfinite(P).all() and torch.isfinite(Pbar).all()
-        overlap = einsum("ijp,ijq->pq", P, Pbar)
-        identity = torch.eye(P.shape[-1], dtype=P.dtype, device=P.device)
-        assert torch.allclose(overlap, identity, atol=1e-8, rtol=1e-8)
-        print(site, "OK:", tuple(P.shape), tuple(Pbar.shape))
+
+
+
+if __name__ == "__main__":
+    main()
