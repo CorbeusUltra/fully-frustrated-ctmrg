@@ -6,6 +6,10 @@ from dataclasses import InitVar, dataclass
 import torch
 from torch import Tensor
 
+from .unitcell import Site
+
+type EnvSites = dict[Site, Environment]
+
 torch.set_default_dtype(torch.float64)
 
 @dataclass

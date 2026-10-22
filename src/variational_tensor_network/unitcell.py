@@ -3,6 +3,7 @@
 from collections.abc import Callable
 
 type Site = tuple[int, int]
+type UnitCellCoord = Callable[[int, int], Site]
 
 
 def rotated_unitcell_coord(unitcell_coord: Callable[[int, int], Site]) -> Callable[[int, int], Site]:
@@ -45,14 +46,13 @@ TILINGS = {
     "diagonal_3": (tuple((x, 0) for x in range(3)), diagonal_3),
 }
 
-TILING_NAME = "rectangle_2x3"
-sites_coord, unitcell_coord = TILINGS[TILING_NAME]
-
 
 def main():
+    TILING_NAME = "rectangle_2x3"
+    sites_coord, unitcell_coord = TILINGS[TILING_NAME]
     print(f"unitcell_coord(2,3)={unitcell_coord(2,3)}")
     print(f"unitcell_coord(3,3)={unitcell_coord(3,3)}")
-    # print(f"={}")
+    print(f"sites_coord={sites_coord}")
 
 
 if __name__ == "__main__":

@@ -5,10 +5,8 @@ from torch import Tensor, einsum
 from torch.linalg import norm
 
 from .objects import Config, Environment
-
-type Site = tuple[int, int]
-type TensorSites = dict[Site, Tensor]
-
+from .peps import TensorSites, double_layer
+from .unitcell import Site
 
 torch.set_default_dtype(torch.float64)
 
@@ -20,19 +18,9 @@ def initial_a(config: Config) -> Tensor:
     return a / norm(a)
 
 
-def initial_A(a: Tensor, config: Config) -> Tensor:
-    expected_shape = (config.D, config.D, config.D, config.D, config.d)
-    if tuple(a.shape) != expected_shape:
-        raise ValueError(f"Expected a.shape == {expected_shape}, got {tuple(a.shape)}.")
-    A = einsum("ijkls,IJKLs->iIjJkKlL", a, a)
-    D2 = config.D2
-    A = A.reshape(D2,D2,D2,D2)
-    return A
-
-
 def initial_sites(config: Config, sites_coords: tuple[Site, ...]) -> tuple[TensorSites, TensorSites]:
     a_sites = {r: initial_a(config) for r in sites_coords}
-    A_sites = {r: initial_A(a, config) for r, a in a_sites.items()}
+    A_sites = {r: double_layer(a, config) for r, a in a_sites.items()}
     return a_sites, A_sites
 
 
@@ -79,7 +67,8 @@ def uniform_boundary(config: Config) -> Tensor:
 
 
 def main():
-    from .unitcell import sites_coords
+    from .unitcell import TILINGS
+    sites_coords, _ = TILINGS["checkerboard"]
     config = Config()
     a_sites, A_sites = initial_sites(config,sites_coords)
     for r in sites_coords:

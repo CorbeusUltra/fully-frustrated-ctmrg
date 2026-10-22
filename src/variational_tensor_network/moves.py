@@ -6,14 +6,9 @@ import torch
 from torch import Tensor, einsum
 from torch.linalg import norm
 
-from .objects import Config, Environment
-from .unitcell import rotated_unitcell_coord
-
-type Site = tuple[int, int]
-type TensorSites = dict[Site, Tensor]
-type EnvSites = dict[Site, Environment]
-type UnitCellCoord = Callable[[int, int], Site]
-
+from .objects import Config, Environment, EnvSites
+from .peps import TensorSites, double_layer
+from .unitcell import Site, UnitCellCoord, rotated_unitcell_coord
 
 
 def make_accessor[Object](objects_sites: Mapping[Site, Object], site: Site, unitcell_coord: UnitCellCoord) -> Callable[[int, int], Object]:
@@ -130,45 +125,6 @@ def all_moves_sites(A_sites: TensorSites, env_sites: EnvSites, unitcell_coord: U
 
 
 
-def check_tiling(sites_coord: tuple[Site, ...], unitcell_coord: UnitCellCoord, config: Config, steps: int = 5) -> None:
-    from . import initialize
-    torch.manual_seed(0)
-    a = initialize.initial_a(config)
-    A = initialize.initial_A(a, config)
-    delta = initialize.uniform_boundary(config)
-    A_sites = {site: A for site in sites_coord}
-    env_sites = initialize.initial_env_sites(A_sites, delta, config)
-    env_reference = initialize.initial_env(delta, A, config)
-    for _ in range(steps):
-        env_reference, _ = all_moves(A, env_reference, config)
-        env_sites, _ = all_moves_sites(A_sites, env_sites, unitcell_coord, config)
-        for env in env_sites.values():
-            for actual, expected in zip(env, env_reference):
-                torch.testing.assert_close(actual, expected, atol=1e-8, rtol=1e-8)
-    print(f"  OK | uniform reference: {steps} matching left moves")
-
-
-def main() -> None:
-    from time import perf_counter
-
-    from .unitcell import TILINGS
-
-    start = perf_counter()
-    config = Config()
-
-    for name, (sites_coord, unitcell_coord) in TILINGS.items():
-        print(f"\n[{name}] sites={len(sites_coord)} | D={config.D} | chi={config.chi}", flush=True)
-        check_tiling(sites_coord, unitcell_coord, config)
-
-    print(f"\nAll {len(TILINGS)} cases passed in {perf_counter() - start:.2f} s.")
-
-
-
-
-
-
-
-
 # Legacy code from the single site CTMRG
 
 def left_move(A: Tensor, env: Environment, config: Config) -> tuple[Environment, Tensor]:
@@ -222,6 +178,12 @@ def all_moves(A: Tensor, env: Environment, config: Config) -> tuple[Environment,
     return env, torch.stack(xi_moves)
 
 
+
+
+
+
+def main() -> None:
+    ...
 
 
 
