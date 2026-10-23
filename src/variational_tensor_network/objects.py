@@ -65,3 +65,33 @@ class Environment:
 
     def __iter__(self) -> Iterator[Tensor]:
         return iter((self.C_ur, self.C_ul, self.C_dl, self.C_dr, self.T_r, self.T_u, self.T_l, self.T_d))
+
+
+@dataclass(frozen=True)
+class SiteWeights:
+    """Reference the bond weights around one square-lattice site."""
+
+    r: Tensor
+    u: Tensor
+    l: Tensor
+    d: Tensor
+
+    config: InitVar[Config | None] = None
+
+    def __post_init__(self, config: Config | None) -> None:
+        directions = ("r", "u", "l", "d")
+
+        for direction in directions:
+            weight = getattr(self, direction)
+            if weight.ndim != 1:
+                raise ValueError(f"{direction} must be a vector, got shape {tuple(weight.shape)}.")
+
+        D = config.D if config is not None else self.r.shape[0]
+
+        if D <= 0:
+            raise ValueError("Bond dimension must be strictly positive.")
+
+        for direction in directions:
+            weight = getattr(self, direction)
+            if weight.shape[0] != D:
+                raise ValueError(f"{direction} must have shape ({D},), got {tuple(weight.shape)}.")

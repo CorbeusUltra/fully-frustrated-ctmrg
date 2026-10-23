@@ -1,1 +1,0 @@
-Try to optimize the speed of the code using opt_einsum and benchmark to compare usefulness of such a tool.

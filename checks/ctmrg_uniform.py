@@ -10,14 +10,19 @@ from variational_tensor_network.plots import plot_convergence, plot_convergence_
 from variational_tensor_network.unitcell import TILINGS
 
 
-def main():
+def main(*, archive: bool = False):
     config = Config()
     torch.manual_seed(0)
 
     root = Path(__file__).resolve().parents[1]
-    run_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_") + f"_D={config.D}_chi={config.chi}"
-    output_dir = root / "outputs" / "checks" / "ctmrg_uniform" / run_name
-    output_dir.mkdir(parents=True, exist_ok=False)
+    base_dir = root / "outputs" / "checks" / "ctmrg_uniform"
+    if archive:
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_%f")
+        output_dir = base_dir / f"{timestamp}_D={config.D}_chi={config.chi}"
+    else:
+        output_dir = base_dir / "latest"
+    output_dir.mkdir(parents=True, exist_ok=not archive)
+    print(f"Saving figures to: {output_dir}")
 
     A = double_layer(initial_a(config))
     delta = uniform_boundary(config)
@@ -46,4 +51,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(archive=False)
