@@ -1,13 +1,15 @@
-"""Define the objects exptected to be used in moves.py file."""
+"""Define tensor-network configuration and data structures."""
 
 from collections.abc import Iterator
 from dataclasses import InitVar, dataclass
+from typing import Literal
 
 import torch
 from torch import Tensor
 
 from .unitcell import Site
 
+type BondWeights = dict[tuple[Site, Literal["r", "d"]], Tensor]
 type EnvSites = dict[Site, Environment]
 
 torch.set_default_dtype(torch.float64)

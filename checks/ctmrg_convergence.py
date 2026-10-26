@@ -15,7 +15,7 @@ def main(*, archive: bool = False):
     torch.manual_seed(0)
 
     root = Path(__file__).resolve().parents[1]
-    base_dir = root / "outputs" / "checks" / "ctmrg_uniform"
+    base_dir = root / "outputs" / "checks" / "ctmrg_convergence"
     if archive:
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_%f")
         output_dir = base_dir / f"{timestamp}_D={config.D}_chi={config.chi}"
@@ -32,8 +32,8 @@ def main(*, archive: bool = False):
     thresholds = reference_thresholds
 
     for name in ("checkerboard", "rectangle_2x3"):
-        sites_coord, unitcell_coord = TILINGS[name]
-        A_sites = {site: A for site in sites_coord}
+        sites_coords, unitcell_coord = TILINGS[name]
+        A_sites = {site: A for site in sites_coords}
         env_sites = initial_env_sites(A_sites, delta, config)
         _, site_errors, _ = run_ctmrg_sites(env_sites, A_sites, unitcell_coord, config, stop_on_convergence=False)
         errors[name] = torch.stack(site_errors).amax(dim=1).tolist()
@@ -42,11 +42,11 @@ def main(*, archive: bool = False):
     plot_convergence_comparison(errors, thresholds, output_path=output_dir / "uniform_comparison.pdf")
 
     for name in ("checkerboard", "rectangle_2x3"):
-        sites_coord, unitcell_coord = TILINGS[name]
-        _, A_sites = initial_sites(config, sites_coord)
+        sites_coords, unitcell_coord = TILINGS[name]
+        _, A_sites = initial_sites(config, sites_coords)
         env_sites = initial_env_sites(A_sites, delta, config)
         _, site_errors, site_thresholds = run_ctmrg_sites(env_sites, A_sites, unitcell_coord, config, stop_on_convergence=False)
-        plot_convergence_sites(site_errors, site_thresholds, sites_coord, unitcell_coord, name, output_path=output_dir / f"{name}.pdf")
+        plot_convergence_sites(site_errors, site_thresholds, sites_coords, unitcell_coord, name, output_path=output_dir / f"{name}.pdf")
 
 
 

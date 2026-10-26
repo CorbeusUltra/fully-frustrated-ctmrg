@@ -49,10 +49,10 @@ TILINGS = {
 
 def main():
     TILING_NAME = "rectangle_2x3"
-    sites_coord, unitcell_coord = TILINGS[TILING_NAME]
+    sites_coords, unitcell_coord = TILINGS[TILING_NAME]
     print(f"unitcell_coord(2,3)={unitcell_coord(2,3)}")
     print(f"unitcell_coord(3,3)={unitcell_coord(3,3)}")
-    print(f"sites_coord={sites_coord}")
+    print(f"sites_coords={sites_coords}")
 
 
 if __name__ == "__main__":

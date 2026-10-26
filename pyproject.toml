@@ -1,7 +1,7 @@
 [project]
 name = "variational-tensor-network"
 version = "0.1.0"
-description = "CTMRG code for the fully frustrated bilayer model using pytorch"
+description = "CTMRG using pytorch"
 readme = "README.md"
 authors = [
     { name = "Lucas Bourret", email = "lucas.bourret@epfl.ch" }

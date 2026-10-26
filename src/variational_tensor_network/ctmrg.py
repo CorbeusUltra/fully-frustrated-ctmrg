@@ -3,7 +3,7 @@
 import torch
 from torch import Tensor
 
-from .moves import all_moves, all_moves_sites
+from .ctmrg_moves import all_moves, all_moves_sites
 from .objects import Config, Environment, EnvSites
 from .peps import TensorSites
 from .unitcell import UnitCellCoord
@@ -49,8 +49,3 @@ def run_ctmrg_sites(env_sites: EnvSites, A_sites: TensorSites, unitcell_coord: U
     if not stop_on_convergence:
         return env_sites, errors, thresholds
     raise RuntimeError("Convergence was not reached within max_iter cycles.")
-
-
-
-if __name__ == "__main__":
-    ...

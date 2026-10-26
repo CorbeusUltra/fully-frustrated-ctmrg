@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import torch
 from torch import Tensor
 
-from .unitcell import Site, UnitCellCoord
+from ..unitcell import Site, UnitCellCoord
 
 
 def plot_convergence(errors: list[float], thresholds: list[float], output_path: Path, show: bool = False) -> None:
@@ -39,13 +39,13 @@ def plot_convergence_comparison(errors: dict[str, list[float]], thresholds: list
     plt.close(fig)
 
 
-def plot_convergence_sites(errors: list[Tensor], thresholds: list[Tensor], sites_coord: tuple[Site, ...], unitcell_coord: UnitCellCoord, name: str, output_path: Path, show: bool = False) -> None:
+def plot_convergence_sites(errors: list[Tensor], thresholds: list[Tensor], sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, name: str, output_path: Path, show: bool = False) -> None:
     errors_array = torch.stack(errors).numpy()
     thresholds_array = torch.stack(thresholds).numpy()
     cycles = range(2, len(errors) + 2)
 
     fig, ax = plt.subplots()
-    for i, site in enumerate(sites_coord):
+    for i, site in enumerate(sites_coords):
         line, = ax.semilogy(cycles, errors_array[:, i], color=f"C{i}", label=f"Site {i}")
         ax.semilogy(cycles, thresholds_array[:, i], "--", color=line.get_color())
 
@@ -55,7 +55,7 @@ def plot_convergence_sites(errors: list[Tensor], thresholds: list[Tensor], sites
     inset = ax.inset_axes([0.68, 0.55, 0.28, 0.38])
     for y in range(6):
         for x in range(6):
-            i = sites_coord.index(unitcell_coord(x, y))
+            i = sites_coords.index(unitcell_coord(x, y))
             inset.scatter(x, y, color=f"C{i}", s=20)
     inset.invert_yaxis()
     inset.set_aspect("equal")

@@ -2,9 +2,9 @@
 
 import torch
 from torch import Tensor, einsum
-from torch.linalg import norm
+from torch.linalg import vector_norm
 
-from .objects import Config, Environment
+from .objects import BondWeights, Config, Environment
 from .peps import TensorSites, double_layer
 from .unitcell import Site
 
@@ -12,15 +12,27 @@ torch.set_default_dtype(torch.float64)
 
 
 def initial_a(config: Config) -> Tensor:
-    D = config.D
-    d = config.d
+    D, d = config.D, config.d
     a = torch.rand(D,D,D,D,d)
-    return a / norm(a)
+    return a / vector_norm(a)
+
+
+def initial_a_sites(config: Config, sites_coords: tuple[Site, ...]) -> TensorSites:
+    return {site: initial_a(config) for site in sites_coords}
+
+
+def initial_bond_weights(a_sites: TensorSites, config: Config) -> BondWeights:
+    bond_weights = {}
+    for site in a_sites:
+        for direction in ("r", "d"):
+            weight = torch.rand(config.D)
+            bond_weights[(site, direction)] = weight / vector_norm(weight)
+    return bond_weights
 
 
 def initial_sites(config: Config, sites_coords: tuple[Site, ...]) -> tuple[TensorSites, TensorSites]:
-    a_sites = {r: initial_a(config) for r in sites_coords}
-    A_sites = {r: double_layer(a, config) for r, a in a_sites.items()}
+    a_sites = initial_a_sites(config, sites_coords)
+    A_sites = {site: double_layer(a, config) for site, a in a_sites.items()}
     return a_sites, A_sites
 
 
@@ -37,8 +49,8 @@ def initial_env(delta: Tensor, A: Tensor, config: Config) -> Environment:
         T = A.new_zeros((chi, D2, chi))
         C[:D2, :D2] = C0
         T[:D2, :, :D2] = T0
-    C_norm = norm(C)
-    T_norm = norm(T)
+    C_norm = vector_norm(C)
+    T_norm = vector_norm(T)
     if not torch.isfinite(C_norm) or C_norm <= 0:
         raise ValueError("Cannot normalize C: its norm must be finite and strictly positive.")
     if not torch.isfinite(T_norm) or T_norm <= 0:
@@ -53,30 +65,13 @@ def initial_env(delta: Tensor, A: Tensor, config: Config) -> Environment:
 
 def initial_env_sites(A_sites: TensorSites, delta: Tensor, config: Config) -> dict[Site, Environment]:
     env_sites: dict[Site, Environment] = {}
-    for r, A in A_sites.items():
-        env_sites[r] = initial_env(delta, A, config)
+    for site, A in A_sites.items():
+        env_sites[site] = initial_env(delta, A, config)
     return env_sites
 
 
 def uniform_boundary(config: Config) -> Tensor:
     """Assign equal weights to all entries of a fused virtual leg.
-
     Each ket/bra index pair receives weight 1.
     """
     return torch.ones(config.D2)
-
-
-def main():
-    from .unitcell import TILINGS
-    sites_coords, _ = TILINGS["checkerboard"]
-    config = Config()
-    a_sites, A_sites = initial_sites(config,sites_coords)
-    for r in sites_coords:
-        print(r, a_sites[r].shape, A_sites[r].shape)
-    delta = uniform_boundary(config)
-    env_sites = initial_env_sites(A_sites, delta, config)
-    print(env_sites)
-
-
-if __name__ == "__main__":
-    main()

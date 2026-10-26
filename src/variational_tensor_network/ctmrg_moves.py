@@ -7,7 +7,7 @@ from torch import Tensor, einsum
 from torch.linalg import norm
 
 from .objects import Config, Environment, EnvSites
-from .peps import TensorSites, double_layer
+from .peps import TensorSites
 from .unitcell import Site, UnitCellCoord, rotated_unitcell_coord
 
 
@@ -21,7 +21,9 @@ def make_accessor[Object](objects_sites: Mapping[Site, Object], site: Site, unit
 
 
 def get_halves(site: Site, A_sites: TensorSites, env_sites: EnvSites, unitcell_coord: UnitCellCoord) -> tuple[Tensor, Tensor]:
-    # The reference site is the upper-left bulk tensor of the 2x2 patch.
+    """
+    The reference site is the upper-left bulk tensor of the 2x2 patch.
+    """
     A_at = make_accessor(A_sites, site, unitcell_coord)
     env_at = make_accessor(env_sites, site, unitcell_coord)
     Q_ul = einsum("IA,AJB,iaI,bJaj->ijBb", env_at(-1,-1).C_ul, env_at(0,-1).T_u, env_at(-1,0).T_l, A_at(0,0))
@@ -125,7 +127,7 @@ def all_moves_sites(A_sites: TensorSites, env_sites: EnvSites, unitcell_coord: U
 
 
 
-# Legacy code from the single site CTMRG
+# "Legacy" code from the single site CTMRG
 
 def left_move(A: Tensor, env: Environment, config: Config) -> tuple[Environment, Tensor]:
     C_ur, C_ul, C_dl, C_dr, T_r, T_u, T_l, T_d = env
@@ -176,17 +178,3 @@ def all_moves(A: Tensor, env: Environment, config: Config) -> tuple[Environment,
         env = Environment(C_dr, C_ur, C_ul, C_dl, T_d, T_r, T_u, T_l)
         A = A.permute(3, 0, 1, 2)
     return env, torch.stack(xi_moves)
-
-
-
-
-
-
-def main() -> None:
-    ...
-
-
-
-
-if __name__ == "__main__":
-    main()
