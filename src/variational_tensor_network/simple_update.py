@@ -1,9 +1,10 @@
 """Do a simple update."""
 
+from warnings import warn
+
 import torch
 from torch import Tensor, einsum
 from torch.linalg import vector_norm
-from warnings import warn
 
 from .objects import BondWeights, SiteWeights
 from .peps import TensorSites, get_site_weights

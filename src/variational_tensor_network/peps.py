@@ -9,13 +9,22 @@ type TensorSites = dict[Site, Tensor]
 
 
 def double_layer(a: Tensor,) -> Tensor:
-    D, d = a.shape[0], a.shape[-1]
-    expected_shape = (D, D, D, D, d)
-    if tuple(a.shape) != expected_shape:
-        raise ValueError(f"Expected a.shape == {expected_shape}, got {tuple(a.shape)}.")
-    A = einsum("ijkls,IJKLs->iIjJkKlL", a, a)
+    """Build a real double layer with contracted physical legs."""
+    D = a.shape[0]
+    if tuple(a.shape[:4]) != (D, D, D, D):
+        raise ValueError("All four virtual dimensions must match.")
+    A = einsum("rulds,RULDs->rRuUlLdD", a, a)
     D2 = D**2
     return A.reshape(D2,D2,D2,D2)
+
+
+def open_double_layer(a: Tensor) -> Tensor:
+    """Build a real double layer with both physical indices open."""
+    D, d = a.shape[0], a.shape[-1]
+    if tuple(a.shape[:4]) != (D, D, D, D):
+        raise ValueError("All four virtual dimensions must match.")
+    A = einsum("rulds,RULDS->rRuUlLdDsS", a, a)
+    return A.reshape(D**2, D**2, D**2, D**2, d, d)
 
 
 def get_site_weights(site: Site, bond_weights: BondWeights, unitcell_coord: UnitCellCoord) -> SiteWeights:
