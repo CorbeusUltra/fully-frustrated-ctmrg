@@ -6,7 +6,7 @@ from torch import Tensor, einsum
 from .objects import BondWeights, SiteWeights
 from .peps import TensorSites, get_site_weights
 from .simple_update import rotate_site_weights
-from .unitcell import UnitCellCoord
+from .tilings import UnitCellCoord
 
 
 def simple_update_bond_energy(a: Tensor, b: Tensor, weights_a: SiteWeights, weights_b: SiteWeights, h: Tensor) -> float:
@@ -21,7 +21,9 @@ def simple_update_bond_energy(a: Tensor, b: Tensor, weights_a: SiteWeights, weig
     denominator = abarbbar.square().sum()
     if denominator.item() == 0:
         raise ValueError("Cannot measure a zero-norm pair.")
-    return (numerator / denominator).real.item()
+    energy = (numerator / denominator).item()
+    # print(f"bond energy : {energy}")
+    return energy
 
 
 def simple_update_energy(a_sites: TensorSites, bond_weights: BondWeights, unitcell_coord: UnitCellCoord, h: Tensor) -> float:
@@ -43,3 +45,11 @@ def simple_update_energy(a_sites: TensorSites, bond_weights: BondWeights, unitce
             weights_b = rotate_site_weights(weights_b)
         total += simple_update_bond_energy(a, b, weights_a, weights_b, h)
     return total / len(a_sites)
+
+
+def ctmrg_two_site_expectation() -> ...:
+    ...
+
+
+def ctmrg_energy() -> ...:
+    ...

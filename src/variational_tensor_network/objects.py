@@ -7,7 +7,7 @@ from typing import Literal
 import torch
 from torch import Tensor
 
-from .unitcell import Site
+from .tilings import Site
 
 type BondWeights = dict[tuple[Site, Literal["r", "d"]], Tensor]
 type EnvSites = dict[Site, Environment]

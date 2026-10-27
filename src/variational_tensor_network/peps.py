@@ -2,19 +2,14 @@
 
 from torch import Tensor, einsum
 
-from .objects import BondWeights, Config, SiteWeights
-from .unitcell import Site, UnitCellCoord
+from .objects import BondWeights, SiteWeights
+from .tilings import Site, UnitCellCoord
 
 type TensorSites = dict[Site, Tensor]
 
 
-def double_layer(a: Tensor, config: Config | None = None) -> Tensor:
-    if config:
-        D = config.D
-        d = config.d
-    else :
-        D = a.shape[0]
-        d = a.shape[-1]
+def double_layer(a: Tensor,) -> Tensor:
+    D, d = a.shape[0], a.shape[-1]
     expected_shape = (D, D, D, D, d)
     if tuple(a.shape) != expected_shape:
         raise ValueError(f"Expected a.shape == {expected_shape}, got {tuple(a.shape)}.")
@@ -29,3 +24,8 @@ def get_site_weights(site: Site, bond_weights: BondWeights, unitcell_coord: Unit
     up = unitcell_coord(x, y - 1)
     left = unitcell_coord(x - 1,y)
     return SiteWeights(r = bond_weights[(center, "r")], u = bond_weights[(up, "d")], l = bond_weights[(left, "r")], d = bond_weights[(center, "d")])
+
+
+def absorb_sqrt_weights(a: Tensor, weights: SiteWeights) -> Tensor:
+    """Absorb the square root of each adjacent bond weight."""
+    return einsum("rulds,r,u,l,d->rulds", a, weights.r.sqrt(), weights.u.sqrt(), weights.l.sqrt(), weights.d.sqrt())

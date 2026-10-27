@@ -6,7 +6,7 @@ from torch.linalg import vector_norm
 
 from .objects import BondWeights, Config, Environment
 from .peps import TensorSites, double_layer
-from .unitcell import Site
+from .tilings import Site
 
 torch.set_default_dtype(torch.float64)
 
@@ -21,18 +21,20 @@ def initial_a_sites(config: Config, sites_coords: tuple[Site, ...]) -> TensorSit
     return {site: initial_a(config) for site in sites_coords}
 
 
-def initial_bond_weights(a_sites: TensorSites, config: Config) -> BondWeights:
+def initial_bond_weights(a_sites: TensorSites) -> BondWeights:
     bond_weights = {}
-    for site in a_sites:
-        for direction in ("r", "d"):
-            weight = torch.rand(config.D)
+    for site, a in a_sites.items():
+        for direction, axis in (("r", 0), ("d", 3)):
+            D = a.shape[axis]
+            weight = torch.rand(D)
             bond_weights[(site, direction)] = weight / vector_norm(weight)
     return bond_weights
 
 
-def initial_sites(config: Config, sites_coords: tuple[Site, ...]) -> tuple[TensorSites, TensorSites]:
+def initial_single_and_double_layer_sites(config: Config, sites_coords: tuple[Site, ...]) -> tuple[TensorSites, TensorSites]:
+    """Initialize site tensors and build their double layers."""
     a_sites = initial_a_sites(config, sites_coords)
-    A_sites = {site: double_layer(a, config) for site, a in a_sites.items()}
+    A_sites = {site: double_layer(a) for site, a in a_sites.items()}
     return a_sites, A_sites
 
 

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import torch
 from torch import Tensor
 
-from ..unitcell import Site, UnitCellCoord
+from ..tilings import Site, UnitCellCoord
 
 
 def plot_convergence(errors: list[float], thresholds: list[float], output_path: Path, show: bool = False) -> None:

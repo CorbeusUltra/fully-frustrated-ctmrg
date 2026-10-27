@@ -6,13 +6,13 @@ from variational_tensor_network import initialize
 from variational_tensor_network.ctmrg_moves import UnitCellCoord, all_moves, all_moves_sites
 from variational_tensor_network.objects import Config
 from variational_tensor_network.peps import double_layer
-from variational_tensor_network.unitcell import TILINGS, Site
+from variational_tensor_network.tilings import TILINGS, Site
 
 
 def check_tilings(sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, config: Config, steps: int = 5) -> None:
     torch.manual_seed(0)
     a = initialize.initial_a(config)
-    A = double_layer(a, config)
+    A = double_layer(a)
     delta = initialize.uniform_boundary(config)
     A_sites = {site: A for site in sites_coords}
     env_sites = initialize.initial_env_sites(A_sites, delta, config)

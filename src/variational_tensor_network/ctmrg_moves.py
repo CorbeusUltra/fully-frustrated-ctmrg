@@ -8,7 +8,7 @@ from torch.linalg import norm
 
 from .objects import Config, Environment, EnvSites
 from .peps import TensorSites
-from .unitcell import Site, UnitCellCoord, rotated_unitcell_coord
+from .tilings import Site, UnitCellCoord, rotated_unitcell_coord
 
 
 def make_accessor[Object](objects_sites: Mapping[Site, Object], site: Site, unitcell_coord: UnitCellCoord) -> Callable[[int, int], Object]:

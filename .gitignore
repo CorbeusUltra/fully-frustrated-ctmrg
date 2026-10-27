@@ -11,3 +11,6 @@ wheels/
 
 # Mac files
 *.DS_Store
+
+# Generated results and figures
+/outputs/

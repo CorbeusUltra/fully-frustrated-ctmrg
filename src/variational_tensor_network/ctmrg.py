@@ -6,7 +6,7 @@ from torch import Tensor
 from .ctmrg_moves import all_moves, all_moves_sites
 from .objects import Config, Environment, EnvSites
 from .peps import TensorSites
-from .unitcell import UnitCellCoord
+from .tilings import UnitCellCoord
 
 
 def run_ctmrg(env: Environment, A: Tensor, config: Config, *, stop_on_convergence: bool = True, max_iter: int = 100, conv_atol: float = 1e-10, conv_rtol: float = 1e-10) -> tuple[Environment, list[float], list[float]]:

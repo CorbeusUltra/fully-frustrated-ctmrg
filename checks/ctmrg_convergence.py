@@ -4,10 +4,10 @@ import torch
 
 from variational_tensor_network.peps import double_layer
 from variational_tensor_network.ctmrg import run_ctmrg, run_ctmrg_sites
-from variational_tensor_network.initialize import initial_a, initial_env, initial_env_sites, initial_sites, uniform_boundary
+from variational_tensor_network.initialize import initial_a, initial_env, initial_env_sites, initial_single_and_double_layer_sites, uniform_boundary
 from variational_tensor_network.objects import Config
 from variational_tensor_network.plots import plot_convergence, plot_convergence_comparison, plot_convergence_sites
-from variational_tensor_network.unitcell import TILINGS
+from variational_tensor_network.tilings import TILINGS
 
 
 def main(*, archive: bool = False):
@@ -43,7 +43,7 @@ def main(*, archive: bool = False):
 
     for name in ("checkerboard", "rectangle_2x3"):
         sites_coords, unitcell_coord = TILINGS[name]
-        _, A_sites = initial_sites(config, sites_coords)
+        _, A_sites = initial_single_and_double_layer_sites(config, sites_coords)
         env_sites = initial_env_sites(A_sites, delta, config)
         _, site_errors, site_thresholds = run_ctmrg_sites(env_sites, A_sites, unitcell_coord, config, stop_on_convergence=False)
         plot_convergence_sites(site_errors, site_thresholds, sites_coords, unitcell_coord, name, output_path=output_dir / f"{name}.pdf")

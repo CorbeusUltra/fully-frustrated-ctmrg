@@ -3,10 +3,11 @@
 import torch
 from torch import Tensor, einsum
 from torch.linalg import vector_norm
+from warnings import warn
 
-from .objects import BondWeights, Config, SiteWeights
+from .objects import BondWeights, SiteWeights
 from .peps import TensorSites, get_site_weights
-from .unitcell import UnitCellCoord
+from .tilings import UnitCellCoord
 
 
 def inverse_weights(weights: Tensor, rtol: float = 1e-12) -> Tensor:
@@ -19,7 +20,7 @@ def inverse_weights(weights: Tensor, rtol: float = 1e-12) -> Tensor:
     return inverse
 
 
-def simple_update_iteration(a: Tensor, b: Tensor, weights_a: SiteWeights, weights_b: SiteWeights, G: Tensor, config: Config) -> tuple[Tensor,Tensor,Tensor]:
+def simple_update_iteration(a: Tensor, b: Tensor, weights_a: SiteWeights, weights_b: SiteWeights, G: Tensor) -> tuple[Tensor,Tensor,Tensor]:
     """
     Assuming the common weight is the down weight of a and the up weight of b.
     """
@@ -28,7 +29,7 @@ def simple_update_iteration(a: Tensor, b: Tensor, weights_a: SiteWeights, weight
     torch.testing.assert_close(weights_a.d, weights_b.u)
     abarbbar = einsum("rulqs,RqLDS,q->rulLDRsS",abar,bbar,weights_a.d)
     M = einsum("rulLDRsS,tTsS->rulLDRtT", abarbbar, G) # M or abarbbar_gated
-    D, d = config.D, config.d
+    D, d = a.shape[3], a.shape[-1]
     M = M.permute(0,1,2,6,3,4,5,7)
     M = M.reshape(D**3 * d, D**3 * d)
     U, S, Vh = torch.linalg.svd(M, full_matrices=False)
@@ -50,32 +51,30 @@ def rotate_site_weights(weights: SiteWeights) -> SiteWeights:
     return SiteWeights(r=weights.u, u=weights.l, l=weights.d, d=weights.r)
 
 
-def simple_update_sweep(a_sites: TensorSites, bond_weights: BondWeights, unitcell_coord: UnitCellCoord, G: Tensor, config: Config) -> None:
+def simple_update_sweep(a_sites: TensorSites, bond_weights: BondWeights, unitcell_coord: UnitCellCoord, G: Tensor) -> None:
     for site, direction in bond_weights:
         x, y = site
         if direction == "d":
             neighbor = unitcell_coord(x, y + 1)
-            a = a_sites[site]
-            b = a_sites[neighbor]
-            weights_a = get_site_weights(site, bond_weights, unitcell_coord)
-            weights_b = get_site_weights(neighbor, bond_weights, unitcell_coord)
-            a_new, b_new, lambda_new = simple_update_iteration(a, b, weights_a, weights_b, G, config)
-        if direction == "r":
+        elif direction == "r":
             neighbor = unitcell_coord(x + 1, y)
-            a = a_sites[site]
-            b = a_sites[neighbor]
-            weights_a = get_site_weights(site, bond_weights, unitcell_coord)
-            weights_b = get_site_weights(neighbor, bond_weights, unitcell_coord)
-            a_rot = a.permute(1, 2, 3, 0, 4)
-            b_rot = b.permute(1, 2, 3, 0, 4)
-            weights_a_rot = rotate_site_weights(weights_a)
-            weights_b_rot = rotate_site_weights(weights_b)
-            a_rot_new, b_rot_new, lambda_new = simple_update_iteration(a_rot, b_rot, weights_a_rot, weights_b_rot, G, config)
-            a_new = a_rot_new.permute(3, 0, 1, 2, 4)
-            b_new = b_rot_new.permute(3, 0, 1, 2, 4)
+        if neighbor == site:
+            warn(f"Bond {site}--{direction}-->{neighbor} connects the same site representative. " "This sweep overwrites one of the two updated tensors; results may be unreliable.", RuntimeWarning)
+        a, b = a_sites[site], a_sites[neighbor]
+        weights_a = get_site_weights(site, bond_weights, unitcell_coord)
+        weights_b = get_site_weights(neighbor, bond_weights, unitcell_coord)
+        if direction == "r":
+            a = a.permute(1, 2, 3, 0, 4)
+            b = b.permute(1, 2, 3, 0, 4)
+            weights_a = rotate_site_weights(weights_a)
+            weights_b = rotate_site_weights(weights_b)
+        a_new, b_new, lambda_new = simple_update_iteration(a, b, weights_a, weights_b, G)
+        if direction == "r":
+            a_new = a_new.permute(3, 0, 1, 2, 4)
+            b_new = b_new.permute(3, 0, 1, 2, 4)
         a_sites[site] = a_new
         a_sites[neighbor] = b_new
-        bond_weights[(site,direction)] = lambda_new
+        bond_weights[(site, direction)] = lambda_new
 
 
 def weights_error(old_weights: BondWeights, new_weights: BondWeights) -> float:
@@ -89,19 +88,20 @@ def weights_error(old_weights: BondWeights, new_weights: BondWeights) -> float:
     return max(errors)
 
 
-def simple_update(a_sites: TensorSites, bond_weights: BondWeights, unitcell_coord: UnitCellCoord, h: Tensor, config: Config, *, schedule: tuple[tuple[float, float], ...], max_sweeps: int = 5000) -> list[tuple[float, float]]:
+def simple_update(a_sites: TensorSites, bond_weights: BondWeights, unitcell_coord: UnitCellCoord, h: Tensor, *, schedule: tuple[tuple[float, float], ...], max_sweeps: int = 5000) -> list[tuple[float, float]]:
     history = []
-    d = config.d
+    d = next(iter(a_sites.values())).shape[-1]
     for tau, tol in schedule:
         G = torch.linalg.matrix_exp(-tau * h).reshape(d, d, d, d)
         for sweep in range(1, max_sweeps + 1):
             old_weights = {bond: weight.clone() for bond, weight in bond_weights.items()}
-            simple_update_sweep(a_sites, bond_weights, unitcell_coord, G, config)
+            simple_update_sweep(a_sites, bond_weights, unitcell_coord, G)
             error = weights_error(old_weights, bond_weights)
             history.append((tau, error))
-            print(f"tau={tau:.1e}, sweep={sweep}, error={error:.3e}")
+            # print(f"tau={tau:.1e}, sweep={sweep}, error={error:.3e}") # increased verbosity
             if error <= tol:
                 break
         else:
             raise RuntimeError(f"No convergence at tau={tau} after {max_sweeps} sweeps.")
+        # print(f"\nNew step : tau={tau:.1e}, sweep={sweep}, error={error:.3e}\n")
     return history

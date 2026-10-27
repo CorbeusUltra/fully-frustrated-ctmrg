@@ -4,7 +4,7 @@ import torch
 from variational_tensor_network.initialize import initial_a_sites, initial_bond_weights
 from variational_tensor_network.objects import BondWeights, Config
 from variational_tensor_network.peps import get_site_weights
-from variational_tensor_network.unitcell import TILINGS, Site, UnitCellCoord
+from variational_tensor_network.tilings import TILINGS, Site, UnitCellCoord
 
 
 def plot_weights(name: str, sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, bond_weights: BondWeights, size: int = 4) -> None:
@@ -39,7 +39,7 @@ def main() -> None:
     config = Config()
     for name, (sites_coords, unitcell_coord) in TILINGS.items():
         a_sites = initial_a_sites(config, sites_coords)
-        bond_weights = initial_bond_weights(a_sites, config)
+        bond_weights = initial_bond_weights(a_sites)
         assert len(bond_weights) == 2 * len(a_sites)
         labels = {id(weight): f"𝜆{i}" for i, weight in enumerate(bond_weights.values())}
         print(f"\n{name}: {len(a_sites)} sites, {len(bond_weights)} bond weights")
