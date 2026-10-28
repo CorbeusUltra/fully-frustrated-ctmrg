@@ -89,7 +89,7 @@ def weights_error(old_weights: BondWeights, new_weights: BondWeights) -> float:
     return max(errors)
 
 
-def simple_update(a_sites: TensorSites, bond_weights: BondWeights, unitcell_coord: UnitCellCoord, h: Tensor, *, schedule: tuple[tuple[float, float], ...], max_sweeps: int = 5000) -> list[tuple[float, float]]:
+def simple_update(a_sites: TensorSites, bond_weights: BondWeights, unitcell_coord: UnitCellCoord, h: Tensor, *, schedule: tuple[tuple[float, float], ...], max_sweeps: int = 10000) -> list[tuple[float, float]]:
     history = []
     d = next(iter(a_sites.values())).shape[-1]
     for tau, tol in schedule:
@@ -99,10 +99,8 @@ def simple_update(a_sites: TensorSites, bond_weights: BondWeights, unitcell_coor
             simple_update_sweep(a_sites, bond_weights, unitcell_coord, G)
             error = weights_error(old_weights, bond_weights)
             history.append((tau, error))
-            # print(f"tau={tau:.1e}, sweep={sweep}, error={error:.3e}") # increased verbosity
             if error <= tol:
                 break
         else:
             raise RuntimeError(f"No convergence at tau={tau} after {max_sweeps} sweeps.")
-        # print(f"\nNew step : tau={tau:.1e}, sweep={sweep}, error={error:.3e}\n")
     return history

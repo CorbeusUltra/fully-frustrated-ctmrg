@@ -2,8 +2,10 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+from ._utils import finish_plot
 
-def plot_simple_update(history: list[tuple[float, float]], output_path: Path, show: bool = False) -> None:
+
+def plot_simple_update(history: list[tuple[float, float]], show: bool = False, output_path: Path | None = None) -> None:
     if not history:
         raise ValueError("History must not be empty.")
     taus, errors = zip(*history)
@@ -17,8 +19,4 @@ def plot_simple_update(history: list[tuple[float, float]], output_path: Path, sh
     axes[1].set(xlabel="Sweep", ylabel=r"$\tau$")
     for ax in axes:
         ax.grid(alpha=0.3)
-    fig.tight_layout()
-    fig.savefig(output_path)
-    if show:
-        plt.show()
-    plt.close(fig)
+    finish_plot(fig, show=show, output_path=output_path)

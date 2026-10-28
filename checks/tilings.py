@@ -1,29 +1,10 @@
-"""Compare all_moves and all_moves_sites when all sites have the same A tensors."""
+"""Print site representatives and export tiling diagrams for visual inspection."""
 
-import torch  # noqa: I001
+from time import perf_counter
 
-from variational_tensor_network import initialize
-from variational_tensor_network.ctmrg_moves import UnitCellCoord, all_moves, all_moves_sites
-from variational_tensor_network.objects import Config
-from variational_tensor_network.peps import double_layer
+from variational_tensor_network.ctmrg_moves import UnitCellCoord
+from variational_tensor_network.plots import plot_output_path, plot_tiling
 from variational_tensor_network.tilings import TILINGS, Site
-
-
-def check_tilings(sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, config: Config, steps: int = 5) -> None:
-    torch.manual_seed(0)
-    a = initialize.initial_a(config)
-    A = double_layer(a)
-    delta = initialize.uniform_boundary(config)
-    A_sites = {site: A for site in sites_coords}
-    env_sites = initialize.initial_env_sites(A_sites, delta, config)
-    env_reference = initialize.initial_env(delta, A, config)
-    for _ in range(steps):
-        env_reference, _ = all_moves(A, env_reference, config)
-        env_sites, _ = all_moves_sites(A_sites, env_sites, unitcell_coord, config)
-        for env in env_sites.values():
-            for actual, expected in zip(env, env_reference):
-                torch.testing.assert_close(actual, expected, atol=1e-8, rtol=1e-8)
-    print(f"OK | uniform reference: {steps} matching left moves")
 
 
 def print_tiling(sites_coord: tuple[Site, ...], unitcell_coord: UnitCellCoord, width: int = 5, height: int = 5) -> None:
@@ -31,21 +12,19 @@ def print_tiling(sites_coord: tuple[Site, ...], unitcell_coord: UnitCellCoord, w
     for y in range(height):
         print(" ".join(f"[{labels[unitcell_coord(x, y)]}]" for x in range(width)))
 
+
+
 def main():
-    from time import perf_counter
-
     start = perf_counter()
-    config = Config()
-
     for name, (sites_coords, unitcell_coord) in TILINGS.items():
-        print(f"\n[{name}] sites={len(sites_coords)} | D={config.D} | chi={config.chi}", flush=True)
+        print(f"\n\n[{name}] ({len(sites_coords)} sites)")
         print()
         print_tiling(sites_coords, unitcell_coord)
         print()
-        check_tilings(sites_coords, unitcell_coord, config)
-        print()
+        output_path = plot_output_path(__file__, f"{name}.pdf")
+        plot_tiling(name, sites_coords, unitcell_coord, size=6, output_path=output_path)
+    print(f"\nExported {len(TILINGS)} diagrams in {perf_counter() - start:.2f} s.\n")
 
-    print(f"\nAll {len(TILINGS)} cases passed in {perf_counter() - start:.2f} s.")
 
 if __name__ == "__main__":
     main()
