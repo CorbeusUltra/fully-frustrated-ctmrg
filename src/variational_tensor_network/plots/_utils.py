@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
 
-def finish_plot(fig: Figure, show: bool = False, output_path: Path | None = None) -> None:
+def finish_plot(fig: Figure, title: str = "", show: bool = False, output_path: Path | None = None) -> None:
+    if title:
+        fig.suptitle(title)
     fig.tight_layout()
     if output_path is not None:
         output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -7,7 +7,8 @@ from torch import Tensor, einsum
 from torch.linalg import vector_norm
 
 from .objects import BondWeights, SiteWeights
-from .peps import TensorSites, get_site_weights
+from .observables import expectation_from_rdm, simple_update_rdms
+from .peps import TensorSites, get_site_weights, rotate_site_weights
 from .tilings import UnitCellCoord
 
 
@@ -47,11 +48,6 @@ def simple_update_iteration(a: Tensor, b: Tensor, weights_a: SiteWeights, weight
     return a_new, b_new, S
 
 
-def rotate_site_weights(weights: SiteWeights) -> SiteWeights:
-    """Reorder weights to match tensor.permute(1, 2, 3, 0, 4)."""
-    return SiteWeights(r=weights.u, u=weights.l, l=weights.d, d=weights.r)
-
-
 def simple_update_sweep(a_sites: TensorSites, bond_weights: BondWeights, unitcell_coord: UnitCellCoord, G: Tensor) -> None:
     for site, direction in bond_weights:
         x, y = site
@@ -78,29 +74,30 @@ def simple_update_sweep(a_sites: TensorSites, bond_weights: BondWeights, unitcel
         bond_weights[(site, direction)] = lambda_new
 
 
-def weights_error(old_weights: BondWeights, new_weights: BondWeights) -> float:
-    errors = []
-    for bond, new_weight in new_weights.items():
-        old_weight = old_weights[bond]
-        old_normalized = old_weight / vector_norm(old_weight)
-        new_normalized = new_weight / vector_norm(new_weight)
-        error = (new_normalized - old_normalized).abs().max().item()
-        errors.append(error)
-    return max(errors)
-
-
 def simple_update(a_sites: TensorSites, bond_weights: BondWeights, unitcell_coord: UnitCellCoord, h: Tensor, *, schedule: tuple[tuple[float, float], ...], max_sweeps: int = 10000) -> list[tuple[float, float]]:
     history = []
     d = next(iter(a_sites.values())).shape[-1]
+    rdms = simple_update_rdms(a_sites, bond_weights, unitcell_coord)
+    energies = {bond: expectation_from_rdm(rho, h).item() for bond, rho in rdms.items()}
     for tau, tol in schedule:
         G = torch.linalg.matrix_exp(-tau * h).reshape(d, d, d, d)
         for sweep in range(1, max_sweeps + 1):
-            old_weights = {bond: weight.clone() for bond, weight in bond_weights.items()}
+            old_energies = energies
             simple_update_sweep(a_sites, bond_weights, unitcell_coord, G)
-            error = weights_error(old_weights, bond_weights)
+            rdms = simple_update_rdms(a_sites, bond_weights, unitcell_coord)
+            energies = {bond: expectation_from_rdm(rho, h).item() for bond, rho in rdms.items()}
+            error = max(abs(energies[bond] - old_energies[bond]) for bond in energies)
             history.append((tau, error))
             if error <= tol:
                 break
         else:
-            raise RuntimeError(f"No convergence at tau={tau} after {max_sweeps} sweeps.")
+            D = next(iter(a_sites.values())).shape[0]
+            warn(f"\n\nSimple update did not converge after {max_sweeps} sweeps "
+                 f"(D={D}, tau={tau:.3g}).\n"
+                 f"Maximum bond-energy change: {error:.2e}.\n"
+                 f"Tolerance: {tol:.2e}.\n"
+                 "Returning the last state and skipping any remaining tau stages.\n",
+                 RuntimeWarning,
+                 stacklevel=2)
+            return history
     return history

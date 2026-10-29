@@ -7,8 +7,7 @@ from torch import Tensor, einsum
 
 from .ctmrg_moves import make_accessor
 from .objects import BondWeights, EnvSites, SiteWeights
-from .peps import TensorSites, get_site_weights, open_double_layer
-from .simple_update import rotate_site_weights
+from .peps import TensorSites, get_site_weights, open_double_layer, rotate_site_weights
 from .tilings import Site, UnitCellCoord
 
 type Direction = Literal["r", "d"]

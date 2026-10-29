@@ -11,7 +11,7 @@ from variational_tensor_network.plots import plot_convergence, plot_convergence_
 from variational_tensor_network.tilings import TILINGS, Site, UnitCellCoord
 
 
-def collect_uniform_convergence(config: Config, max_iter: int = 100) -> tuple[dict[str, list[float]], list[float]]:
+def collect_uniform_convergence(config: Config, max_iter: int = 1000) -> tuple[dict[str, list[float]], list[float]]:
     """Collect single-site and multisite histories for the same uniform state."""
     A = double_layer(initial_a(config))
     delta = uniform_boundary(config)
@@ -27,7 +27,7 @@ def collect_uniform_convergence(config: Config, max_iter: int = 100) -> tuple[di
     return errors, thresholds
 
 
-def collect_convergence_sites(sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, config: Config, max_iter: int = 100) -> tuple[list[Tensor], list[Tensor]]:
+def collect_convergence_sites(sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, config: Config, max_iter: int = 1000) -> tuple[list[Tensor], list[Tensor]]:
     """Collect per-site CTMRG histories for independently initialized site tensors."""
     _, A_sites = initial_single_and_double_layer_sites(config, sites_coords)
     delta = uniform_boundary(config)

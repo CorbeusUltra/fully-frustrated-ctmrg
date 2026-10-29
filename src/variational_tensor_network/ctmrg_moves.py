@@ -41,7 +41,13 @@ def get_projectors(R: Tensor, Rbar: Tensor, config: Config) -> tuple[Tensor, Ten
     r_left   = dim_i * dim_j
     r_right  = dim_k * dim_l
     M = RRbar.reshape(r_left, r_right)
-    U, S, Vh = torch.linalg.svd(M, full_matrices=False)
+    if not torch.isfinite(M).all().item():
+        raise ValueError("The projector matrix contains non-finite values.")
+    scale = M.abs().max()
+    if scale.item() == 0:
+        raise ValueError("The projector matrix is identically zero.")
+    U, S, Vh = torch.linalg.svd(M / scale, full_matrices=False)
+    S = S * scale
     V = Vh.mT
     rtol = max(M.shape) * torch.finfo(S.dtype).eps
     rank = (S > rtol * S[0]).sum().item()
@@ -145,7 +151,13 @@ def left_move(A: Tensor, env: Environment, config: Config) -> tuple[Environment,
     r_left   = dim_i * dim_j
     r_right  = dim_k * dim_l
     M = RRbar.reshape(r_left, r_right)
-    U, S, Vh = torch.linalg.svd(M, full_matrices=False)
+    if not torch.isfinite(M).all().item():
+        raise ValueError("The projector matrix contains non-finite values.")
+    scale = M.abs().max()
+    if scale.item() == 0:
+        raise ValueError("The projector matrix is identically zero.")
+    U, S, Vh = torch.linalg.svd(M / scale, full_matrices=False)
+    S = S * scale
     V = Vh.mT
     rtol = max(M.shape) * torch.finfo(S.dtype).eps
     rank = (S > rtol * S[0]).sum().item()

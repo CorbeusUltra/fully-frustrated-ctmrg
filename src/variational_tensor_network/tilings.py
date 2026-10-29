@@ -17,6 +17,9 @@ def rotated_unitcell_coord(unitcell_coord: Callable[[int, int], Site]) -> Callab
 def checkerboard(x: int, y: int) -> Site:
     return ((x + y) % 2, 0)
 
+def abcd(x: int, y: int) -> Site:
+    return (x % 2,y % 2)
+
 def vertical_stripes_2(x: int, y: int) -> Site:
     return (x % 2, 0)
 
@@ -38,6 +41,7 @@ def diagonal_3(x: int, y: int) -> Site:
 
 TILINGS = {
     "checkerboard": (((0, 0), (1, 0)), checkerboard),
+    "abcd": (((0,0),(1,0), (0,1), (1,1)), abcd),
     "vertical_stripes_2": (((0, 0), (1, 0)), vertical_stripes_2),
     "horizontal_stripes_2": (((0, 0), (0, 1)), horizontal_stripes_2),
     "vertical_stripes_3": (tuple((x, 0) for x in range(3)), vertical_stripes_3),

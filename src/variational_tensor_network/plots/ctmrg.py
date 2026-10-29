@@ -10,18 +10,18 @@ from ..tilings import Site, UnitCellCoord
 from ._utils import finish_plot
 
 
-def plot_convergence(errors: list[float], thresholds: list[float], show: bool = False, output_path: Path | None = None) -> None:
+def plot_convergence(errors: list[float], thresholds: list[float], title: str = "", show: bool = False, output_path: Path | None = None) -> None:
     cycles = range(2, len(errors) + 2)
     fig, ax = plt.subplots()
-    ax.semilogy(cycles, errors, "o-", color="blue", label=r"$|\xi_\mathrm{new} - \xi_\mathrm{old}|$")
+    ax.semilogy(cycles, errors, "x-", color="blue", label=r"$|\xi_\mathrm{new} - \xi_\mathrm{old}|$")
     ax.semilogy(cycles, thresholds, "--", color="red", label="threshold")
     ax.set(xlabel="number of cycle", ylabel=r"change in $\xi$")
     ax.legend()
     ax.grid()
-    finish_plot(fig, show=show, output_path=output_path)
+    finish_plot(fig, title=title, show=show, output_path=output_path)
 
 
-def plot_convergence_comparison(errors: dict[str, list[float]], thresholds: list[float], show: bool = False, output_path: Path | None = None) -> None:
+def plot_convergence_comparison(errors: dict[str, list[float]], thresholds: list[float], title: str = "", show: bool = False, output_path: Path | None = None) -> None:
     cycles = range(2, len(thresholds) + 2)
     fig, ax = plt.subplots()
     ax.semilogy(cycles, errors["Single-site"], "k-", label="Single-site")
@@ -31,10 +31,10 @@ def plot_convergence_comparison(errors: dict[str, list[float]], thresholds: list
     ax.set(xlabel="number of cycle", ylabel=r"change in $\xi$")
     ax.legend()
     ax.grid()
-    finish_plot(fig, show=show, output_path=output_path)
+    finish_plot(fig, title=title, show=show, output_path=output_path)
 
 
-def plot_convergence_sites(errors: list[Tensor], thresholds: list[Tensor], sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, name: str, show: bool = False, output_path: Path | None = None) -> None:
+def plot_convergence_sites(errors: list[Tensor], thresholds: list[Tensor], sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, title: str = "", show: bool = False, output_path: Path | None = None) -> None:
     errors_array = torch.stack(errors).numpy()
     thresholds_array = torch.stack(thresholds).numpy()
     cycles = range(2, len(errors) + 2)
@@ -42,7 +42,7 @@ def plot_convergence_sites(errors: list[Tensor], thresholds: list[Tensor], sites
     for i, site in enumerate(sites_coords):
         line, = ax.semilogy(cycles, errors_array[:, i], color=f"C{i}", label=f"Site {i}")
         ax.semilogy(cycles, thresholds_array[:, i], "--", color=line.get_color())
-    ax.set(xlabel="number of cycle", ylabel=r"change in $\xi$", title=name)
+    ax.set(xlabel="number of cycle", ylabel=r"change in $\xi$")
     ax.legend(loc="upper center")
     ax.grid()
     inset = ax.inset_axes([0.68, 0.55, 0.28, 0.38], facecolor="white")
@@ -61,10 +61,10 @@ def plot_convergence_sites(errors: list[Tensor], thresholds: list[Tensor], sites
         spine.set_edgecolor("0.5")
         spine.set_linewidth(0.8)
     inset.set_title("Tiling", fontsize=9)
-    finish_plot(fig, show=show, output_path=output_path)
+    finish_plot(fig, title=title, show=show, output_path=output_path)
 
 
-def plot_energy_vs_chi(chi_values: list[int], energies: list[float], D: int, show: bool = False, output_path: Path | None = None) -> None:
+def plot_energy_vs_chi(chi_values: list[int], energies: list[float], D: int, title: str = "", show: bool = False, output_path: Path | None = None) -> None:
     fig, ax = plt.subplots()
     ax.plot(chi_values, energies, "x-b", label = fr"$D = {D}$")
     ax.set(xlabel=r"$\chi$", ylabel="Energy per site")
@@ -73,10 +73,10 @@ def plot_energy_vs_chi(chi_values: list[int], energies: list[float], D: int, sho
     ax.ticklabel_format(axis="y", style="plain", useOffset=False)
     ax.set_axisbelow(True)
     ax.grid(alpha=0.3)
-    finish_plot(fig, show=show, output_path=output_path)
+    finish_plot(fig, title=title, show=show, output_path=output_path)
 
 
-def plot_energy_by_D_vs_chi(energies_by_D: dict[int, tuple[list[int], list[float]]], show: bool = False, output_path: Path | None = None) -> None:
+def plot_energy_by_D_vs_chi(energies_by_D: dict[int, tuple[list[int], list[float]]], title: str = "", show: bool = False, output_path: Path | None = None) -> None:
     markers = cycle(["^", "s", "p", "h", "D", "v", "o", "+", "x", ""])
     fig, ax = plt.subplots()
     for D, (chi_values, energies) in energies_by_D.items():
@@ -88,4 +88,23 @@ def plot_energy_by_D_vs_chi(energies_by_D: dict[int, tuple[list[int], list[float
     ax.ticklabel_format(axis="y", style="plain", useOffset=False)
     ax.set_axisbelow(True)
     ax.grid(alpha=0.3)
-    finish_plot(fig, show=show, output_path=output_path)
+    finish_plot(fig, title=title, show=show, output_path=output_path)
+
+
+
+
+# Legacy code
+
+def plot_energy_by_tiling_vs_chi(energies_by_tiling: dict[str, tuple[list[int], list[float]]], title: str = "", show: bool = False, output_path: Path | None = None) -> None:
+    markers = cycle(["^", "s", "p", "h", "D", "v", "o", "+", "x", ""])
+    fig, ax = plt.subplots()
+    for tiling_name, (chi_values, energies) in energies_by_tiling.items():
+        ax.plot(chi_values, energies, "-", marker=next(markers), label = f"{tiling_name}")
+    ax.set(xlabel=r"$\chi$", ylabel="Energy per site")
+    all_chi = sorted({chi for chi_values, _ in energies_by_tiling.values() for chi in chi_values})
+    ax.set_xticks(all_chi)
+    ax.legend()
+    ax.ticklabel_format(axis="y", style="plain", useOffset=False)
+    ax.set_axisbelow(True)
+    ax.grid(alpha=0.3)
+    finish_plot(fig, title=title, show=show, output_path=output_path)

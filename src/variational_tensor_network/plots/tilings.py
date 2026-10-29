@@ -11,7 +11,7 @@ from ..tilings import Site, UnitCellCoord
 from ._utils import finish_plot
 
 
-def _draw_tiling(ax: Axes, name: str, sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, size: int) -> None:
+def _draw_tiling(ax: Axes, sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, size: int) -> None:
     """Draw site representatives and nearest-neighbor bonds on existing axes."""
     for y in range(size):
         for x in range(size):
@@ -26,20 +26,19 @@ def _draw_tiling(ax: Axes, name: str, sites_coords: tuple[Site, ...], unitcell_c
     ax.set_ylim(size - 0.5, -0.5)
     ax.set_aspect("equal")
     ax.set_axis_off()
-    ax.set_title(name)
 
 
-def plot_tiling(name: str, sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, size: int = 4, show: bool = False, output_path: Path | None = None) -> None:
+def plot_tiling(sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, size: int = 4, title: str = "", show: bool = False, output_path: Path | None = None) -> None:
     """Plot a finite patch of a square-lattice tiling."""
     fig, ax = plt.subplots(figsize=(7, 7))
-    _draw_tiling(ax, name, sites_coords, unitcell_coord, size)
-    finish_plot(fig, show=show, output_path=output_path)
+    _draw_tiling(ax, sites_coords, unitcell_coord, size)
+    finish_plot(fig, title=title, show=show, output_path=output_path)
 
 
-def plot_weights(name: str, sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, bond_weights: BondWeights, size: int = 4, show: bool = False, output_path: Path | None = None) -> None:
+def plot_weights(sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, bond_weights: BondWeights, size: int = 4, title: str = "", show: bool = False, output_path: Path | None = None) -> None:
     """Plot a tiling with labels identifying shared bond weights."""
     fig, ax = plt.subplots(figsize=(7, 7))
-    _draw_tiling(ax, name, sites_coords, unitcell_coord, size)
+    _draw_tiling(ax, sites_coords, unitcell_coord, size)
     labels = {id(weight): rf"$\lambda_{{{i}}}$" for i, weight in enumerate(bond_weights.values())}
     for y in range(size):
         for x in range(size):
@@ -49,4 +48,4 @@ def plot_weights(name: str, sites_coords: tuple[Site, ...], unitcell_coord: Unit
                     continue
                 label = labels[id(getattr(weights, direction))]
                 ax.text(x + dx / 2, y + dy / 2, label, ha="center", va="center", bbox={"facecolor": "white", "edgecolor": "none", "pad": 1}, zorder=2)
-    finish_plot(fig, show=show, output_path=output_path)
+    finish_plot(fig, title=title, show=show, output_path=output_path)

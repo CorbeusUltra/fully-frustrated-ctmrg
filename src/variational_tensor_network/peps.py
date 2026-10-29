@@ -35,6 +35,11 @@ def get_site_weights(site: Site, bond_weights: BondWeights, unitcell_coord: Unit
     return SiteWeights(r = bond_weights[(center, "r")], u = bond_weights[(up, "d")], l = bond_weights[(left, "r")], d = bond_weights[(center, "d")])
 
 
+def rotate_site_weights(weights: SiteWeights) -> SiteWeights:
+    """Reorder weights to match tensor.permute(1, 2, 3, 0, 4)."""
+    return SiteWeights(r=weights.u, u=weights.l, l=weights.d, d=weights.r)
+
+
 def absorb_sqrt_weights(a: Tensor, weights: SiteWeights) -> Tensor:
     """Absorb the square root of each adjacent bond weight."""
     return einsum("rulds,r,u,l,d->rulds", a, weights.r.sqrt(), weights.u.sqrt(), weights.l.sqrt(), weights.d.sqrt())
