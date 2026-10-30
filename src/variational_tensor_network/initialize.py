@@ -41,7 +41,7 @@ def initial_single_and_double_layer_sites(config: Config, sites_coords: tuple[Si
 def initial_env(delta: Tensor, A: Tensor, config: Config) -> Environment:
     D2 = config.D2
     chi = config.chi
-    # C0 = torch.einsum("ijkl,k,l->ij", A, delta, delta)
+    # C0 = torch.einsum("ijkl,k,l->ij", A, delta, delta) # a first possible intialisation
     # T0 = torch.einsum("k,ijkl->lij", delta, A)
     # if chi <= D2:
     #     C = C0[:chi, :chi].clone()

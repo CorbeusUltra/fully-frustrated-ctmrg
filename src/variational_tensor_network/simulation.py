@@ -38,10 +38,11 @@ def run_simulation(tiling_name: str, config: Config, H: Tensor, chi_values: list
     return history, energy_per_peps_site_su, energies_per_peps_site_ctmrg
 
 
-def run_D_scan(D_values: list[int], tiling_name: str, config: Config, H: Tensor, chi_values: list[int], schedule: tuple[tuple[float, float], ...]) -> dict[int, dict]:
+def run_D_scan(D_values: list[int], tiling_name: str, config: Config, H: Tensor, chi_values_by_D: list[int], schedule: tuple[tuple[float, float], ...]) -> dict[int, dict]:
     """Run simulations at several bond dimensions for one tiling."""
     results_by_D = {}
     for D in D_values:
+        chi_values = chi_values_by_D[D]
         config_D = replace(config, D=D)
         print(f"\n\nRunning simple update and ctmrg with {tiling_name} for D={D}\n")
         history, energy_per_peps_site_su, energies_per_peps_site_ctmrg = run_simulation(tiling_name, config_D, H, chi_values, schedule)
