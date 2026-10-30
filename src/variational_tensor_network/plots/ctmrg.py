@@ -67,7 +67,7 @@ def plot_convergence_sites(errors: list[Tensor], thresholds: list[Tensor], sites
 def plot_energy_vs_chi(chi_values: list[int], energies: list[float], D: int, title: str = "", show: bool = False, output_path: Path | None = None) -> None:
     fig, ax = plt.subplots()
     ax.plot(chi_values, energies, "x-b", label = fr"$D = {D}$")
-    ax.set(xlabel=r"$\chi$", ylabel="Energy per site")
+    ax.set(xlabel=r"$\chi$", ylabel="Energy per PEPS site")
     ax.legend()
     ax.set_xticks(chi_values)
     ax.ticklabel_format(axis="y", style="plain", useOffset=False)
@@ -81,7 +81,7 @@ def plot_energy_by_D_vs_chi(energies_by_D: dict[int, tuple[list[int], list[float
     fig, ax = plt.subplots()
     for D, (chi_values, energies) in energies_by_D.items():
         ax.plot(chi_values, energies, "-", marker=next(markers), label = fr"$D = {D}$")
-    ax.set(xlabel=r"$\chi$", ylabel="Energy per site")
+    ax.set(xlabel=r"$\chi$", ylabel="Energy per PEPS site")
     all_chi = sorted({chi for chi_values, _ in energies_by_D.values() for chi in chi_values})
     ax.set_xticks(all_chi)
     ax.legend()
@@ -95,16 +95,16 @@ def plot_energy_by_D_vs_chi(energies_by_D: dict[int, tuple[list[int], list[float
 
 # Legacy code
 
-def plot_energy_by_tiling_vs_chi(energies_by_tiling: dict[str, tuple[list[int], list[float]]], title: str = "", show: bool = False, output_path: Path | None = None) -> None:
-    markers = cycle(["^", "s", "p", "h", "D", "v", "o", "+", "x", ""])
-    fig, ax = plt.subplots()
-    for tiling_name, (chi_values, energies) in energies_by_tiling.items():
-        ax.plot(chi_values, energies, "-", marker=next(markers), label = f"{tiling_name}")
-    ax.set(xlabel=r"$\chi$", ylabel="Energy per site")
-    all_chi = sorted({chi for chi_values, _ in energies_by_tiling.values() for chi in chi_values})
-    ax.set_xticks(all_chi)
-    ax.legend()
-    ax.ticklabel_format(axis="y", style="plain", useOffset=False)
-    ax.set_axisbelow(True)
-    ax.grid(alpha=0.3)
-    finish_plot(fig, title=title, show=show, output_path=output_path)
+# def plot_energy_by_tiling_vs_chi(energies_by_tiling: dict[str, tuple[list[int], list[float]]], title: str = "", show: bool = False, output_path: Path | None = None) -> None:
+#     markers = cycle(["^", "s", "p", "h", "D", "v", "o", "+", "x", ""])
+#     fig, ax = plt.subplots()
+#     for tiling_name, (chi_values, energies) in energies_by_tiling.items():
+#         ax.plot(chi_values, energies, "-", marker=next(markers), label = f"{tiling_name}")
+#     ax.set(xlabel=r"$\chi$", ylabel="Energy per PEPS site")
+#     all_chi = sorted({chi for chi_values, _ in energies_by_tiling.values() for chi in chi_values})
+#     ax.set_xticks(all_chi)
+#     ax.legend()
+#     ax.ticklabel_format(axis="y", style="plain", useOffset=False)
+#     ax.set_axisbelow(True)
+#     ax.grid(alpha=0.3)
+#     finish_plot(fig, title=title, show=show, output_path=output_path)

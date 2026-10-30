@@ -12,7 +12,7 @@ from variational_tensor_network.tilings import TILINGS, Site, UnitCellCoord
 
 def check_weights(sites_coords: tuple[Site, ...], unitcell_coord: UnitCellCoord, bond_weights: BondWeights) -> None:
     """Check the number of bond weights and their sharing between neighbors."""
-    assert len(bond_weights) == 2 * len(sites_coords), "Expected two bond weights per site."
+    assert len(bond_weights) == 2 * len(sites_coords), "Expected two bond weights per PEPS site."
     for site in sites_coords:
         x, y = site
         weights = get_site_weights(site, bond_weights, unitcell_coord)

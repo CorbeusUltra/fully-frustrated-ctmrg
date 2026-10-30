@@ -13,7 +13,7 @@ def finish_plot(fig: Figure, title: str = "", show: bool = False, output_path: P
     if output_path is not None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(output_path)
-        print(f"Figure saved under '{output_path}'.")
+        print(f"\nFigure saved under '{output_path}'.\n")
     if show:
         plt.show()
     plt.close(fig)

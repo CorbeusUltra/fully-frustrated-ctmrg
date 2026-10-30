@@ -1,6 +1,6 @@
 # Variational tensor network
 
-CTMRG using PyTorch.
+Tensor networks for physics problems using PyTorch.
 
 ## Setup
 

@@ -23,10 +23,8 @@ class Config:
         for name in ("d", "D", "chi"):
             if type(getattr(self, name)) is not int:
                 raise TypeError(f"{name} must be a Python integer.")
-        if self.d != 2:
-            raise ValueError("d must equal 2.")
-        if self.D <= 0 or self.chi <= 0:
-            raise ValueError("D and chi must be strictly positive.")
+        if self.d <= 0 or self.D <= 0 or self.chi <= 0:
+            raise ValueError("d, D and chi must be strictly positive.")
     @property
     def D2(self) -> int:
         return self.D**2

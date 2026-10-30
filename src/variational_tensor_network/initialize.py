@@ -1,7 +1,7 @@
 """Initialize the bulk states and their environments."""
 
 import torch
-from torch import Tensor, einsum
+from torch import Tensor
 from torch.linalg import vector_norm
 
 from .objects import BondWeights, Config, Environment
@@ -39,18 +39,20 @@ def initial_single_and_double_layer_sites(config: Config, sites_coords: tuple[Si
 
 
 def initial_env(delta: Tensor, A: Tensor, config: Config) -> Environment:
-    C0 = einsum("ijkl,k,l->ij", A, delta, delta)
-    T0 = einsum("k,ijkl->lij", delta, A)
     D2 = config.D2
     chi = config.chi
-    if chi <= D2:
-        C = C0[:chi, :chi].clone()
-        T = T0[:chi, :, :chi].clone()
-    else:
-        C = A.new_zeros((chi, chi))
-        T = A.new_zeros((chi, D2, chi))
-        C[:D2, :D2] = C0
-        T[:D2, :, :D2] = T0
+    # C0 = torch.einsum("ijkl,k,l->ij", A, delta, delta)
+    # T0 = torch.einsum("k,ijkl->lij", delta, A)
+    # if chi <= D2:
+    #     C = C0[:chi, :chi].clone()
+    #     T = T0[:chi, :, :chi].clone()
+    # else:
+    #     C = A.new_zeros((chi, chi))
+    #     T = A.new_zeros((chi, D2, chi))
+    #     C[:D2, :D2] = C0
+    #     T[:D2, :, :D2] = T0
+    C = torch.ones(chi,chi) # another possible initialisation
+    T = torch.ones(chi,D2,chi)
     C_norm = vector_norm(C)
     T_norm = vector_norm(T)
     if not torch.isfinite(C_norm) or C_norm <= 0:
