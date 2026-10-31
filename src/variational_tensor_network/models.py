@@ -3,15 +3,17 @@
 from torch import Tensor, eye, kron
 
 def make_hamil_term(S_alpha, s1, S_beta, s2, pf, L):
-    if s2 > s1:
-        print(f"Warning: Swapping sites {s1} and {s2} to ensure s1 > s2")
+    if not (1 <= s1 <= L and 1 <= s2 <= L):
+        raise ValueError("Sites must be between 1 and L")
+
+    if s1 == s2:
+        raise ValueError("For two-site Hamiltonians, the sites must be different")
+
+    if s1 > s2:
+        print(f"Warning: Swapping sites order")
         S_alpha, s1, S_beta, s2 = S_beta, s2, S_alpha, s1
 
-    if s1 > L or s2 > L:
-        raise ValueError("Sites must be less than or equal to L")
-
-    I = eye
-
+    I = eye    
     A = I(2 ** (s1 - 1))
     B = S_alpha
     C = I(2 ** (s2 - s1 - 1))
@@ -44,10 +46,13 @@ def single_site_Zeeman_term(L: int, h: float = 1.0, site: int = 1) -> Tensor:
     if L < 1:
         raise ValueError("L must be at least 1")
 
+    I = eye
     S_z = Tensor([[0.5, 0.0], [0.0, -0.5]])
-    H = eye(2 ** L) * 0.0
+    A = I(2 ** (site - 1))
+    B = S_z
+    C = I(2 ** (L - site))
 
-    H += make_hamil_term(S_z, site, S_z, site, h, L)
+    H = h * kron(kron(A, B), C)
 
     return H
 
