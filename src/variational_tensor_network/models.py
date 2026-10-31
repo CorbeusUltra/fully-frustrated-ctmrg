@@ -107,7 +107,26 @@ def ffb_bond_alternate(JD: float = 2.0, J: float = 1.0, h: float = 0) -> Tensor:
     H += two_site_heisenberg_term(L=4, J=J, site1=2, site2=3)
     H += two_site_heisenberg_term(L=4, J=J, site1=1, site2=4) 
     H += two_site_heisenberg_term(L=4, J=J, site1=2, site2=4)
-    # removing the last two terms implements Shastry-Sutherland model, which is a special case of the fully frustrated bilayer model
+    #Zeeman terms
+    H += single_site_Zeeman_term(L=4, h=h/2, site=1) #removing the double counting of the Zeeman term by dividing h by 2 for each site
+    H += single_site_Zeeman_term(L=4, h=h/2, site=2) #removing the double counting of the Zeeman term by dividing h by 2 for each site
+    H += single_site_Zeeman_term(L=4, h=h/2, site=3) #removing the double counting of the Zeeman term by dividing h by 2 for each site
+    H += single_site_Zeeman_term(L=4, h=h/2, site=4) #removing the double counting of the Zeeman term by dividing h by 2 for each site
+    return  H
+
+def Shastry_Sutherland_bond(JD: float = 2.0, J: float = 1.0, h: float = 0) -> Tensor:
+    #Constructs the Heisenberg Hamiltonian for fully frustrated bilayer model term
+    #     4 
+    #    ||   
+    #     3  
+    #     
+    #  1 == 2
+    #Dimer terms
+    H =  two_site_heisenberg_term(L=4, J=JD/2, site1=1, site2=2) #removing the double counting of the dimer term by dividing JD by 2 for each dimer
+    H += two_site_heisenberg_term(L=4, J=JD/2, site1=3, site2=4) #removing the double counting of the dimer term by dividing JD by 2 for each dimer
+    #inter-dimer terms
+    H += two_site_heisenberg_term(L=4, J=J, site1=1, site2=3)
+    H += two_site_heisenberg_term(L=4, J=J, site1=2, site2=3)
     #Zeeman terms
     H += single_site_Zeeman_term(L=4, h=h/2, site=1) #removing the double counting of the Zeeman term by dividing h by 2 for each site
     H += single_site_Zeeman_term(L=4, h=h/2, site=2) #removing the double counting of the Zeeman term by dividing h by 2 for each site
@@ -137,4 +156,9 @@ MODELS = {
             "d": 4,
             "label": "FFB (Alternate)",
         },
+    "Shastry-Sutherland": {
+                "bond": Shastry_Sutherland_bond,
+                "d": 4,
+                "label": "Shastry-Sutherland",
+            },
 }
